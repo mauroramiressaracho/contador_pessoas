@@ -137,7 +137,7 @@ while 1:
     cv2.putText(frame, "ENTRANDO: " + str(down), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
     # Exibe a imagem com as informações
-    cv2.imshow("frame", frame)
+    cv2.imshow("Contador Pessoas em Claudio!", frame)
 
     # Espera até que a tecla 'q' seja pressionada para encerrar o programa
     if cv2.waitKey(30) & 0xFF == ord('q'):
