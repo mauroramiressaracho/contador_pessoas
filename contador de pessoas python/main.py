@@ -17,21 +17,13 @@ def center(x, y, w, h):
     return cx, cy
 
 # Inicialização da captura de vídeo a partir de um arquivo
-cap = cv2.VideoCapture('entrada_loja.mp4')
+cap = cv2.VideoCapture('pessoas_igreja.mp4')
 
 # Inicialização do algoritmo de subtração de fundo
 fgbg = cv2.createBackgroundSubtractorMOG2()
 
 # Lista para armazenar detecções
 detects = []
-
-# Posição da linha de referência e deslocamento para a detecção
-posL = 150
-offset = 30
-
-# Coordenadas para desenhar a linha de referência
-xy1 = (20, posL)
-xy2 = (300, posL)
 
 # Inicialização de contadores
 total = 0
@@ -42,10 +34,18 @@ down = 0
 with open('registro_entradas.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['Data e Hora'])
-
+   
 # Loop principal do programa
 while 1:
     ret, frame = cap.read()
+
+    # Posição da linha de referência e deslocamento para a detecção
+    posL = 30
+    offset = 20
+
+    # Coordenadas para desenhar a linha de referência diagonal para a direita    
+    xy1 = (150, 25)  # Canto superior direito (x, y)
+    xy2 = (150, 180)  # Canto inferior esquerdo (x, y)
 
     # Conversão do quadro para escala de cinza
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -65,18 +65,20 @@ while 1:
     closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel, iterations=8)
 
     # Desenha linhas de referência na imagem
-    cv2.line(frame, xy1, xy2, (255, 0, 0), 3)
-    cv2.line(frame, (xy1[0], posL - offset), (xy2[0], posL - offset), (255, 255, 0), 2)
-    cv2.line(frame, (xy1[0], posL + offset), (xy2[0], posL + offset), (255, 255, 0), 2)
+    cv2.line(frame, xy1, xy2, (255, 0, 0), 3)  # Linha diagonal para a direita
+    cv2.line(frame, (xy1[0] - offset, xy1[1]), (xy2[0] - offset, xy2[1]), (255, 255, 0), 2)  # Linha esquerda paralela à diagonal
+    cv2.line(frame, (xy1[0] + offset, xy1[1]), (xy2[0] + offset, xy2[1]), (255, 255, 0), 2)  # Linha direita paralela à diagonal
+
 
     # Encontra contornos na imagem
     contours, hierarchy = cv2.findContours(dilation, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    i = 0
+    i = 0 
+    sensibilidade = None   
     for cnt in contours:
         (x, y, w, h) = cv2.boundingRect(cnt)
         area = cv2.contourArea(cnt)
-        
-        if int(area) > 3000:
+        sensibilidade = str(area)
+        if int(area) > 2200:
             centro = center(x, y, w, h)
             
             # Desenha informações sobre os objetos detectados
@@ -86,32 +88,31 @@ while 1:
             
             # Armazena as detecções na lista 'detects'
             if len(detects) <= i:
-                detects.append([])
+                detects.append([])              
                 
             if centro[1] > posL - offset and centro[1] < posL + offset:
-                detects[i].append(centro)
+                detects[i].append(centro)                
             else:
                 detects[i].clear()
             i += 1
 
+    #Se a imagem tiver toda preta, zera o contorno
     if i == 0:
         detects.clear()
-
-    i = 0
-
+    i = 0    
     if len(contours) == 0:
         detects.clear()
-    else:
-        for detect in detects:
-            for (c, l) in enumerate(detect):
-                if detect[c - 1][1] < posL and l[1] > posL:
+    else:        
+        for detect in detects:            
+            for (c, l) in enumerate(detect):                
+                print()
+                if detect[c - 1][1] < posL and l[1] > posL:                                        
                     detect.clear()
                     up += 1
                     total += 1
                     cv2.line(frame, xy1, xy2, (0, 255, 0), 5)
                     continue
-
-                if detect[c - 1][1] > posL and l[1] < posL:
+                if detect[c - 1][1] > posL and l[1] < posL:                    
                     detect.clear()
                     down += 1
                     total += 1
@@ -134,10 +135,14 @@ while 1:
     # Exibe informações sobre o número total de objetos detectados
     cv2.putText(frame, "TOTAL: " + str(total), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
     cv2.putText(frame, "SAINDO: " + str(up), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    cv2.putText(frame, "ENTRANDO: " + str(down), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+    cv2.putText(frame, "ENTRANDO: " + str(down), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)   
+    #cv2.putText(frame, sensibilidade, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
     # Exibe a imagem com as informações
     cv2.imshow("Contador Pessoas em Claudio!", frame)
+    cv2.imshow("Frame", dilation)
+    #cv2.imshow("opening", opening)
+    #cv2.imshow("closing", closing)
 
     # Espera até que a tecla 'q' seja pressionada para encerrar o programa
     if cv2.waitKey(30) & 0xFF == ord('q'):
