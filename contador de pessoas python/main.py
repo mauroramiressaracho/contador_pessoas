@@ -7,6 +7,7 @@
 import cv2
 import csv
 import datetime
+import banco as bd
 
 # Função para calcular o centro de um retângulo
 def center(x, y, w, h):
@@ -17,7 +18,7 @@ def center(x, y, w, h):
     return cx, cy
 
 # Inicialização da captura de vídeo a partir de um arquivo
-cap = cv2.VideoCapture('pessoas_igreja.mp4')
+cap = cv2.VideoCapture('entrada_loja.mp4')
 
 # Inicialização do algoritmo de subtração de fundo
 fgbg = cv2.createBackgroundSubtractorMOG2()
@@ -33,7 +34,7 @@ down = 0
 # Abre um arquivo CSV para escrita e escreve o cabeçalho
 with open('registro_entradas.csv', mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(['Data e Hora'])
+    writer.writerow('Data e Hora')
    
 # Loop principal do programa
 while 1:
@@ -120,12 +121,15 @@ while 1:
                     
                     # Obtém a data e hora atual
                     current_datetime = datetime.datetime.now()
-                    formatted_datetime = current_datetime.strftime("%d/%m/%Y %H:%M:%S")
+                    formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
                     
                     # Abre o arquivo CSV e escreve a data e hora
-                    with open('registro_entradas.csv', mode='a', newline='') as file:
-                        writer = csv.writer(file)
-                        writer.writerow([formatted_datetime])
+                    #with open('registro_entradas.csv', mode='a', newline='') as file:
+                       #writer = csv.writer(file)
+                       #writer.writerow([formatted_datetime])
+                    
+                    # Insere no Banco Azure na Nuvem   
+                    bd.insere_dados(formatted_datetime)
                         
                     continue
 
